@@ -1,0 +1,61 @@
+{# Admin layout. Thymeleaf used a `th:fragment` include per page; Jinja template
+   inheritance expresses the same thing with the pages declaring only their own
+   content. `current_page` marks the active nav entry — the Java controllers
+   never set it, so the highlight silently never worked. #}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Verwaltung{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/css/admin.css" />
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div class="admin-page">
+        <aside class="admin-sidebar">
+            <nav class="admin-nav">
+                <ul>
+                    <li class="{{ 'active' if current_page == 'users' }}"><a href="/admin/users">Nutzer</a></li>
+                    <li class="{{ 'active' if current_page == 'vehicles' }}"><a href="/admin/vehicles">Fahrzeuge</a></li>
+                    <li class="{{ 'active' if current_page == 'stations' }}"><a href="/admin/stations">Feuerwachen</a></li>
+                    <li class="{{ 'active' if current_page == 'incidents' }}"><a href="/admin/incidents">Einsatzorte</a></li>
+                </ul>
+            </nav>
+            <div class="admin-sidebar-footer">
+                <a href="/">&larr; Karte anzeigen</a>
+            </div>
+        </aside>
+        <main class="admin-content">
+            <div class="page-header">
+                <div style="display:flex;align-items:center;">
+                    <button type="button" class="hamburger-btn" onclick="toggleAdminSidebar()">&#9776;</button>
+                    <h1>{% block heading %}{% endblock %}</h1>
+                </div>
+                <a href="/">&larr; Karte anzeigen</a>
+            </div>
+            <div class="container">
+                {% if flash_message %}<div class="flash-msg">{{ flash_message }}</div>{% endif %}
+                {% if flash_error %}<div class="flash-msg flash-error">{{ flash_error }}</div>{% endif %}
+                {% block content %}{% endblock %}
+            </div>
+            {% block scripts %}{% endblock %}
+        </main>
+    </div>
+    <script>
+        window.toggleAdminSidebar = function () {
+            var sidebar = document.querySelector('.admin-sidebar');
+            if (sidebar) { sidebar.classList.toggle('open'); }
+        };
+        // Wrap tables so they scroll horizontally on narrow screens.
+        document.querySelectorAll('main.admin-content .container > table').forEach(function (table) {
+            var wrapper = document.createElement('div');
+            wrapper.className = 'table-wrapper';
+            wrapper.style.overflowX = 'auto';
+            wrapper.style.webkitOverflowScrolling = 'touch';
+            table.parentNode.insertBefore(wrapper, table);
+            wrapper.appendChild(table);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+{% extends "admin/_base.html" %}
+{% block title %}Fahrzeug bearbeiten - {{ vehicle.callsign }}{% endblock %}
+{% block heading %}Fahrzeug bearbeiten: {{ vehicle.callsign }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+{% endblock %}
+
+{% block content %}
+<form method="post" action="/admin/vehicles/{{ vehicle.id }}" id="editForm">
+    {{ csrf_field }}
+    <input type="hidden" id="lat" name="lat" value="{{ vehicle.lat }}" />
+    <input type="hidden" id="lng" name="lng" value="{{ vehicle.lng }}" />
+
+    <div class="form-section">
+        <h2>Fahrzeugdaten</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="callsign">Funkrufname</label>
+                <input type="text" id="callsign" name="callsign" required
+                       value="{{ vehicle.callsign }}" placeholder="z.B. H1-TL-61" />
+            </div>
+            <div class="form-group">
+                <label for="type">Kategorie</label>
+                <select id="type" name="type" required>
+                    {% for t in vehicle_types %}
+                    <option value="{{ t }}" {% if t == vehicle.type %}selected{% endif %}>{{ t }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="status">Status</label>
+                <select id="status" name="status" required>
+                    {% for code, label in status_labels.items() %}
+                    <option value="{{ code }}" {% if code == vehicle.status %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <h2>Position (auf der Karte klicken)</h2>
+        <div id="position-map"></div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Speichern</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var lat = {{ vehicle.lat }};
+        var lng = {{ vehicle.lng }};
+
+        var map = L.map('position-map').setView([lat, lng], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+        var marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+
+        function setPosition(latlng) {
+            marker.setLatLng(latlng);
+            document.getElementById('lat').value = latlng.lat.toFixed(6);
+            document.getElementById('lng').value = latlng.lng.toFixed(6);
+        }
+
+        marker.on('dragend', function (e) { setPosition(e.target.getLatLng()); });
+        map.on('click', function (e) { setPosition(e.latlng); });
+        setTimeout(function () { map.invalidateSize(); }, 0);
+    });
+</script>
+{% endblock %}

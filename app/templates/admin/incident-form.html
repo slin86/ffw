@@ -1,0 +1,73 @@
+{% extends "admin/_base.html" %}
+{% set editing = incident is not none %}
+{% block title %}{{ 'Einsatzort bearbeiten' if editing else 'Neuen Einsatzort anlegen' }}{% endblock %}
+{% block heading %}{{ 'Einsatzort bearbeiten' if editing else 'Neuen Einsatzort anlegen' }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+{% endblock %}
+
+{% block content %}
+<form method="post" action="{{ '/admin/incidents/' ~ incident.id if editing else '/admin/incidents' }}">
+    {{ csrf_field }}
+    <input type="hidden" id="createLat" name="lat" value="{{ incident.lat if editing else 53.5511 }}" />
+    <input type="hidden" id="createLng" name="lng" value="{{ incident.lng if editing else 9.9937 }}" />
+
+    <div class="form-section">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="name">Name</label>
+                <input type="text" id="name" name="name" required placeholder="z.B. Brand Hauptbahnhof"
+                       value="{{ incident.name if editing else '' }}" />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="description">Beschreibung</label>
+                <textarea id="description" name="description" rows="3"
+                          placeholder="Optional: Lage, Meldebild, Besonderheiten">{{ incident.description if editing and incident.description else '' }}</textarea>
+            </div>
+        </div>
+        {# Only Incident carries the active flag; Station is always active. #}
+        {% if editing %}
+        <div class="form-row">
+            <div class="form-group">
+                <label for="active">
+                    <input type="checkbox" id="active" name="active" value="true"
+                           {% if incident.active %}checked{% endif %} /> Aktiv
+                </label>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="form-section">
+        <h2>Adresse suchen</h2>
+        <div id="geocode-search" style="display:flex;gap:8px;margin-bottom:8px;">
+            <input type="text" id="address-input" placeholder="Adresse eingeben (z.B. Rathausmarkt Hamburg)"
+                   style="flex:1;padding:6px;border:1px solid #ccc;border-radius:4px;" />
+            <button type="button" id="search-address-btn"
+                    style="padding:6px 12px;background:#1976d2;color:white;border:none;border-radius:4px;cursor:pointer;">Adresse suchen</button>
+        </div>
+        <div id="geocode-error" class="flash-msg flash-error" style="display:none;"></div>
+    </div>
+
+    <div class="form-section">
+        <h2>Position (auf der Karte klicken)</h2>
+        <div id="position-map"></div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">{{ 'Speichern' if editing else 'Anlegen' }}</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="/js/location-form.js"></script>
+<script>
+    initLocationForm({
+        lat: {{ incident.lat if editing else 53.5511 }},
+        lng: {{ incident.lng if editing else 9.9937 }}
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "admin/_base.html" %}
+{% block title %}Feuerwachen - Verwaltung{% endblock %}
+{% block heading %}Feuerwachen verwalten{% endblock %}
+
+{% block content %}
+<a href="/admin/stations/new" class="btn btn-primary">Neue Feuerwache anlegen</a>
+
+<h2 style="margin:1rem 0 0.5rem;">Feuerwachen (Stationen)</h2>
+{% if stations %}
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Koordinaten</th>
+            <th>Fahrzeuge</th>
+            <th>Aktionen</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for s in stations %}
+        <tr>
+            <td><strong>{{ s.name }}</strong></td>
+            <td>{{ format_coords(s.lat, s.lng) }}</td>
+            <td>{{ s.vehicles | length }}</td>
+            <td class="actions">
+                <a href="/admin/stations/{{ s.id }}/edit" class="btn btn-edit btn-small">Bearbeiten</a>
+                <form method="post" action="/admin/stations/{{ s.id }}/delete" style="display:inline;"
+                      class="confirm-form" onsubmit="return confirm('Feuerwache wirklich löschen?')">
+                    {{ csrf_field }}
+                    <button type="submit">Löschen</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p style="color:#666;">Keine Feuerwachen gefunden.</p>
+{% endif %}
+{% endblock %}

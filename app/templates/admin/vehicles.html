@@ -1,0 +1,65 @@
+{% extends "admin/_base.html" %}
+{% block title %}Fahrzeuge - Verwaltung{% endblock %}
+{% block heading %}Fahrzeuge verwalten{% endblock %}
+
+{% block content %}
+<div class="form-section">
+    <h2>Neues Fahrzeug anlegen</h2>
+    <form method="post" action="/admin/vehicles/create">
+        {{ csrf_field }}
+        <div class="form-row">
+            <div class="form-group">
+                <label for="callsign">Funkrufname</label>
+                <input type="text" id="callsign" name="callsign" required placeholder="z.B. H1-TL-61" />
+            </div>
+            <div class="form-group">
+                <label for="type">Kategorie</label>
+                <select id="type" name="type" required>
+                    {% for t in vehicle_types %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="status">Status</label>
+                <select id="status" name="status" required>
+                    {% for code, label in status_labels.items() %}<option value="{{ code }}">{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Anlegen</button>
+    </form>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Funkrufname</th>
+            <th>Kategorie</th>
+            <th>Status</th>
+            <th>Standort</th>
+            <th>Änderungen</th>
+            <th>Aktionen</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for v in vehicles %}
+        <tr>
+            <td><strong>{{ v.callsign }}</strong></td>
+            <td>{{ v.type }}</td>
+            <td>{{ v.status_label }}</td>
+            <td>{{ v.location.name if v.location else 'unterwegs' }}</td>
+            <td>{{ v.updated_at | datetime }}</td>
+            <td class="actions">
+                <a href="/admin/vehicles/{{ v.id }}/edit" class="btn btn-edit btn-small">Bearbeiten</a>
+                <form method="post" action="/admin/vehicles/{{ v.id }}/delete" style="display:inline;"
+                      class="confirm-form" onsubmit="return confirm('Fahrzeug wirklich löschen?')">
+                    {{ csrf_field }}
+                    <button type="submit">Löschen</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="color:#666;">Keine Fahrzeuge angelegt.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

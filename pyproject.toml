@@ -1,0 +1,60 @@
+[project]
+name = "ff-trainingskarte"
+version = "0.6.1"
+description = "Training tool for the volunteer fire department: vehicle positions and status on a Hamburg map."
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "jinja2>=3.1",
+    "python-multipart>=0.0.20",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30",
+    "alembic>=1.14",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.7",
+    "redis>=5.2",
+    "bcrypt>=4.2",
+    "httpx>=0.28",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.25",
+    "aiosqlite>=0.20",
+    "ruff>=0.9",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+# Roughly the Spotless/Checkstyle equivalent from the Gradle build: runs on every
+# `ruff check` and is wired into CI, so formatting and simple smells are caught
+# without manual review. C901 is the complexity gate that would have flagged the
+# very long functions in map.js had it been JS.
+select = ["E", "F", "I", "B", "UP", "C90", "SIM", "RUF"]
+ignore = ["B008"]  # B008: FastAPI Depends() in defaults is the documented pattern
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
+[tool.ruff.lint.per-file-ignores]
+# __mapper_args__ is a plain dict by SQLAlchemy's design, not a mutable default.
+"app/models.py" = ["RUF012"]
+# Migrations are generated and keep Alembic's own layout.
+"migrations/versions/*" = ["E501"]

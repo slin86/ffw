@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ff-trainingskarte
+  namespace: feuerwehr
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ff-trainingskarte
+  template:
+    metadata:
+      labels:
+        app: ff-trainingskarte
+    spec:
+      # Alembic runs before the app starts, exactly where Flyway used to run
+      # inside the Spring boot sequence. Against the database Flyway already
+      # migrated, run `alembic stamp 0001_initial` once by hand first -
+      # otherwise this container tries to CREATE TABLE on existing tables.
+      initContainers:
+        - name: migrate
+          image: ghcr.io/slin86/ff-trainingskarte-py:latest
+          command: ["alembic", "upgrade", "head"]
+          envFrom:
+            - configMapRef:
+                name: ff-trainingskarte-config
+            - secretRef:
+                name: feuerwehr-db
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+      containers:
+        - name: app
+          image: ghcr.io/slin86/ff-trainingskarte-py:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: ff-trainingskarte-config
+            - secretRef:
+                name: feuerwehr-db
+          readinessProbe:
+            httpGet:
+              # Public, no auth - the same reason /api/version was public in the
+              # Spring version. Replaces the actuator health endpoint.
+              path: /api/version
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/version
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]

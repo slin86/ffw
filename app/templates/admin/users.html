@@ -1,0 +1,66 @@
+{% extends "admin/_base.html" %}
+{% block title %}Nutzer - Verwaltung{% endblock %}
+{% block heading %}Nutzer verwalten{% endblock %}
+
+{% block content %}
+<div class="form-section">
+    <h2>Neuen Nutzer anlegen</h2>
+    <form method="post" action="/admin/users/create">
+        {{ csrf_field }}
+        <div class="form-row">
+            <div class="form-group">
+                <label for="username">Benutzername</label>
+                <input type="text" id="username" name="username" required placeholder="z.B. max.mustermann" />
+            </div>
+            <div class="form-group">
+                <label for="password">Passwort</label>
+                <input type="password" id="password" name="password" required />
+            </div>
+            <div class="form-group">
+                <label for="role">Rolle</label>
+                <select id="role" name="role" required>
+                    {% for r in roles %}<option value="{{ r }}">{{ r }}</option>{% endfor %}
+                </select>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Anlegen</button>
+    </form>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Benutzername</th>
+            <th>Rolle</th>
+            <th>Status</th>
+            <th>Aktionen</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for u in users %}
+        <tr>
+            <td><strong>{{ u.username }}</strong></td>
+            <td>{{ u.role }}</td>
+            <td>{{ 'Aktiv' if u.enabled else 'Deaktiviert' }}</td>
+            <td class="actions">
+                {# Self-protection: the buttons that would lock the current admin
+                   out are not rendered at all, and the route refuses them too. #}
+                {% if u.username != current_username %}
+                <form method="post" action="/admin/users/{{ u.id }}/toggle" style="display:inline;" class="confirm-form">
+                    {{ csrf_field }}
+                    <button type="submit">{{ 'Deaktivieren' if u.enabled else 'Aktivieren' }}</button>
+                </form>
+                <form method="post" action="/admin/users/{{ u.id }}/delete" style="display:inline;"
+                      class="confirm-form" onsubmit="return confirm('Nutzer wirklich löschen?')">
+                    {{ csrf_field }}
+                    <button type="submit">Löschen</button>
+                </form>
+                {% else %}
+                <span style="color:#888;font-size:0.75rem;">eigenes Konto</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "admin/_base.html" %}
+{% block title %}Einsatzorte - Verwaltung{% endblock %}
+{% block heading %}Einsatzorte verwalten{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1rem;">
+    <a href="/admin/incidents" class="btn btn-edit btn-small">Nur Aktive</a>
+    <a href="/admin/incidents?all=true" class="btn btn-edit btn-small">Alle anzeigen</a>
+</div>
+
+<a href="/admin/incidents/new" class="btn btn-primary">Neuen Einsatzort anlegen</a>
+
+<h2 style="margin:1rem 0 0.5rem;">Einsatzorte</h2>
+{% if incidents %}
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Status</th>
+            <th>Koordinaten</th>
+            <th>Fahrzeuge</th>
+            <th>Aktionen</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for i in incidents %}
+        <tr>
+            <td><strong>{{ i.name }}</strong></td>
+            <td>
+                {% if i.active %}<span style="color:#2ecc71;">[Aktiv]</span>
+                {% else %}<span style="color:#95a5a6;">[Inaktiv]</span>{% endif %}
+            </td>
+            <td>{{ format_coords(i.lat, i.lng) }}</td>
+            <td>{{ i.vehicles | length }}</td>
+            <td class="actions">
+                <form method="post" action="/admin/incidents/{{ i.id }}/toggle" style="display:inline;" class="confirm-form">
+                    {{ csrf_field }}
+                    <button type="submit">{{ 'Deaktivieren' if i.active else 'Aktivieren' }}</button>
+                </form>
+                <a href="/admin/incidents/{{ i.id }}/edit" class="btn btn-edit btn-small">Bearbeiten</a>
+                <form method="post" action="/admin/incidents/{{ i.id }}/delete" style="display:inline;"
+                      class="confirm-form" onsubmit="return confirm('Einsatzort wirklich löschen?')">
+                    {{ csrf_field }}
+                    <button type="submit">Löschen</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p style="color:#666;">{{ 'Keine Einsatzorte gefunden.' if show_all else 'Keine aktiven Einsatzorte gefunden.' }}</p>
+{% endif %}
+{% endblock %}
