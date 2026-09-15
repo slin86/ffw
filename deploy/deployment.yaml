@@ -37,7 +37,7 @@ spec:
               memory: 256Mi
       containers:
         - name: app
-          image: ghcr.io/slin86/ffw-funk:0.6.1
+          image: ghcr.io/slin86/ffw-funk:0.6.2
           ports:
             - containerPort: 8080
           envFrom:
