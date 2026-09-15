@@ -12,7 +12,8 @@ ENV UV_COMPILE_BYTECODE=1 \
 WORKDIR /app
 
 # Dependencies first: this layer is cached until pyproject.toml changes.
-COPY pyproject.toml uv.lock* ./
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
 RUN uv venv /opt/venv && \
     VIRTUAL_ENV=/opt/venv uv pip install --no-cache -r pyproject.toml
 

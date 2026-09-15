@@ -1,0 +1,70 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  # Lint and tests run first and gate the image build: a green build proving
+  # nothing was the failure mode the Gradle setup had.
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv python install 3.13
+      - run: uv sync --extra dev
+      - name: Lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: Type check
+        run: uv run mypy app tests
+      - name: Tests
+        run: uv run pytest -q
+
+  publish:
+    needs: check
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version
+        id: version
+        run: echo "value=$(tr -d '[:space:]' < version.txt)" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/slin86/ff-trainingskarte-py:latest
+            ghcr.io/slin86/ff-trainingskarte-py:${{ steps.version.outputs.value }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Update deployment.yaml
+        run: |
+          VERSION="${{ steps.version.outputs.value }}"
+          sed -i "s|image: ghcr.io/slin86/ff-trainingskarte-py:.*|image: ghcr.io/slin86/ff-trainingskarte-py:${VERSION}|g" deploy/deployment.yaml
+          if git diff --quiet; then exit 0; fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore: bump image to ${VERSION}"
+          git push

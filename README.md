@@ -102,44 +102,6 @@ OpenAPI at `/api/docs` — new, and free from FastAPI.
 | 4 | Am Einsatzort | red |
 | 6 | Außer Dienst | grey |
 
-## Bugs found in the Java version and fixed here
-
-Found while reading the source for the port. Each has a test or is visible in
-the browser:
-
-1. **`isAdmin()` in `map.js` checked for the `_csrf` meta tag**, which every
-   authenticated user has. VIEWERs got draggable markers and the vehicle
-   assignment dropdown and only learned it was not allowed from a 403. Now read
-   from an `_is_admin` meta tag rendered server-side
-   (`test_map_page_marks_admins_and_viewers_differently`).
-2. **`location_type` was never in the JSON.** Jackson serialised
-   `getLocationType()` as `locationType`, while `map.js` reads
-   `location.location_type`. The comparison was always `undefined`, so every
-   location — fire stations included — was labelled "Einsatzort" in its popup.
-   The Pydantic schema emits `location_type` explicitly
-   (`test_station_json_carries_location_type`).
-3. **Drag-and-drop (M10) could never have worked.** `L.circleMarker` ignores
-   `draggable` — it is an option of `L.Marker`, not of `Path`. Now `L.marker`
-   with a `divIcon` that keeps the coloured-dot look.
-4. **`updateVehiclePosition()` returned nothing**, but the `dragend` handler
-   chains `.catch()` onto it, so a failed move threw a `TypeError` instead of
-   rolling the marker back.
-5. `currentPage` is read by `_sidebar.html` but was never set by any controller,
-   so the admin nav never highlighted the active section
-   (`test_active_nav_entry_is_marked`).
-6. `stations.html` and `incidents.html` used `<head>` instead of `<thead>`
-   inside the table.
-7. Deleting a station or incident left `vehicle.location_id` pointing at a gone
-   row. Vehicles now fall back to "unterwegs"
-   (`test_deleting_a_station_sets_its_vehicles_to_unterwegs`).
-8. `map.invalidateSize()` was missing, so popups were clipped after a resize or
-   orientation change. This was still on the open list.
-
-Also simplified: the ~130-line hand-written JSON scanner in `GeocodeController`
-became `response.json()` plus a few guards, and the ~100-line position-picker
-script duplicated in `station-form.html` and `incident-form.html` is now one
-`location-form.js`.
-
 ## Layout
 
 ```
