@@ -53,7 +53,7 @@ def verify_password(raw: str, hashed: str) -> bool:
 # CSRF
 # --------------------------------------------------------------------------- #
 def csrf_token(session: Session) -> str:
-    token = session.get(CSRF_FORM_FIELD)
+    token: str | None = session.get(CSRF_FORM_FIELD)
     if not token:
         token = secrets.token_urlsafe(32)
         session[CSRF_FORM_FIELD] = token

@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: ffw-funk
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+  # secrets.yaml is a template and is deliberately NOT listed here.
+  # The real Secret comes from Infisical.
+
+commonLabels:
+  app.kubernetes.io/name: ffw-funk
+  app.kubernetes.io/part-of: feuerwehr

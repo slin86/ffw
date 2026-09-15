@@ -1,5 +1,5 @@
 [project]
-name = "ff-trainingskarte"
+name = "ffw-funk"
 version = "0.6.1"
 description = "Training tool for the volunteer fire department: vehicle positions and status on a Hamburg map."
 requires-python = ">=3.12"
@@ -24,6 +24,7 @@ dev = [
     "pytest-asyncio>=0.25",
     "aiosqlite>=0.20",
     "ruff>=0.9",
+    "mypy>=1.14",
 ]
 
 [build-system]
@@ -37,6 +38,28 @@ packages = ["app"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+# SQLAlchemy 2.0 and Pydantic ship their own plugins; without them mypy cannot
+# read Mapped[...] descriptors or the generated __init__ signatures.
+plugins = ["pydantic.mypy"]
+exclude = ["^migrations/versions/"]
+
+[[tool.mypy.overrides]]
+# No type stubs published for these.
+module = ["redis.*", "uvicorn.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Tests keep every real check, but are not forced to annotate each test
+# function: `def test_x(admin)` says everything already, and `-> None` on a
+# hundred tests is noise rather than safety.
+module = ["tests.*"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false
 
 [tool.ruff]
 line-length = 110

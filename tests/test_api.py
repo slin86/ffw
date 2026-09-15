@@ -176,12 +176,14 @@ def test_parse_nominatim_reads_lat_lon_and_display_name():
     result = parse_nominatim(
         [{"lat": "53.550341", "lon": "9.992196", "display_name": "Hamburg Hauptbahnhof"}]
     )
+    assert result is not None
     assert (result.lat, result.lng) == (53.55034, 9.9922)
     assert result.display_name == "Hamburg Hauptbahnhof"
 
 
 def test_parse_nominatim_accepts_numeric_values():
     result = parse_nominatim([{"lat": 53.5, "lon": 9.9, "display_name": "Test"}])
+    assert result is not None
     assert (result.lat, result.lng) == (53.5, 9.9)
 
 

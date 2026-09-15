@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
@@ -159,6 +159,6 @@ async def delete_vehicle(vehicle_id: int, db: DB, _: AdminUser) -> None:
     if vehicle is None:
         return
     # Check-ins reference the vehicle; drop them first so the FK holds.
-    await db.execute(VehicleCheckin.__table__.delete().where(VehicleCheckin.vehicle_id == vehicle_id))
+    await db.execute(delete(VehicleCheckin).where(VehicleCheckin.vehicle_id == vehicle_id))
     await db.delete(vehicle)
     await db.commit()

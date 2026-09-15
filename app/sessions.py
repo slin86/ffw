@@ -169,4 +169,5 @@ class SessionMiddleware(BaseHTTPMiddleware):
 
 
 def get_session(request: Request) -> Session:
-    return request.state.session
+    session: Session = request.state.session
+    return session

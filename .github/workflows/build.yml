@@ -54,15 +54,15 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ghcr.io/slin86/ff-trainingskarte-py:latest
-            ghcr.io/slin86/ff-trainingskarte-py:${{ steps.version.outputs.value }}
+            ghcr.io/slin86/ffw-funk:latest
+            ghcr.io/slin86/ffw-funk:${{ steps.version.outputs.value }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Update deployment.yaml
         run: |
           VERSION="${{ steps.version.outputs.value }}"
-          sed -i "s|image: ghcr.io/slin86/ff-trainingskarte-py:.*|image: ghcr.io/slin86/ff-trainingskarte-py:${VERSION}|g" deploy/deployment.yaml
+          sed -i "s|image: ghcr.io/slin86/ffw-funk:.*|image: ghcr.io/slin86/ffw-funk:${VERSION}|g" deploy/deployment.yaml
           if git diff --quiet; then exit 0; fi
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

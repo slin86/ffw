@@ -1,0 +1,46 @@
+# Traefik as the k3s ingress controller. If your cluster uses Traefik's own CRD
+# instead, the IngressRoute equivalent is at the bottom of this file, commented
+# out - use one or the other, not both.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ffw-funk
+  namespace: ffw-funk
+  annotations:
+    # ADJUST: cert-manager issuer name. Drop both annotations if Traefik's own
+    # ACME resolver handles certificates in your setup.
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - ffw-funk.slin.io
+      secretName: ffw-funk-tls
+  rules:
+    - host: ffw-funk.slin.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ffw-funk
+                port:
+                  number: 80
+---
+# apiVersion: traefik.io/v1alpha1
+# kind: IngressRoute
+# metadata:
+#   name: ffw-funk
+#   namespace: ffw-funk
+# spec:
+#   entryPoints: [websecure]
+#   routes:
+#     - match: Host(`ffw-funk.slin.io`)
+#       kind: Rule
+#       services:
+#         - name: ffw-funk
+#           port: 80
+#   tls:
+#     certResolver: letsencrypt

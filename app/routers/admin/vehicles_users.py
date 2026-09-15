@@ -6,8 +6,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import Response
 
 from app.db import get_db
 from app.models import (
@@ -37,7 +38,7 @@ def _redirect(path: str) -> RedirectResponse:
 # Vehicles
 # --------------------------------------------------------------------------- #
 @vehicles.get("")
-async def list_vehicles(request: Request, db: DB, _: AdminUser):
+async def list_vehicles(request: Request, db: DB, _: AdminUser) -> Response:
     result = await db.scalars(select(Vehicle).order_by(Vehicle.callsign))
     return render(
         request,
@@ -58,7 +59,7 @@ async def create_vehicle(
     callsign: Annotated[str, Form()],
     type: Annotated[str, Form()],
     status_: Annotated[int, Form(alias="status")],
-):
+) -> Response:
     exists = await db.scalar(select(Vehicle).where(Vehicle.callsign == callsign))
     if exists is not None:
         flash(request, f"Funkrufname '{callsign}' existiert bereits", error=True)
@@ -80,7 +81,7 @@ async def create_vehicle(
 
 
 @vehicles.get("/{vehicle_id}/edit")
-async def edit_vehicle(vehicle_id: int, request: Request, db: DB, _: AdminUser):
+async def edit_vehicle(vehicle_id: int, request: Request, db: DB, _: AdminUser) -> Response:
     vehicle = await db.get(Vehicle, vehicle_id)
     if vehicle is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Fahrzeug nicht gefunden: {vehicle_id}")
@@ -102,7 +103,7 @@ async def update_vehicle(
     status_: Annotated[int, Form(alias="status")],
     lat: Annotated[float, Form()],
     lng: Annotated[float, Form()],
-):
+) -> Response:
     vehicle = await db.get(Vehicle, vehicle_id)
     if vehicle is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Fahrzeug nicht gefunden: {vehicle_id}")
@@ -125,13 +126,13 @@ async def update_vehicle(
 
 
 @vehicles.post("/{vehicle_id}/delete")
-async def delete_vehicle(vehicle_id: int, request: Request, db: DB, _: AdminUser):
+async def delete_vehicle(vehicle_id: int, request: Request, db: DB, _: AdminUser) -> Response:
     vehicle = await db.get(Vehicle, vehicle_id)
     if vehicle is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Fahrzeug nicht gefunden: {vehicle_id}")
 
     callsign = vehicle.callsign
-    await db.execute(VehicleCheckin.__table__.delete().where(VehicleCheckin.vehicle_id == vehicle_id))
+    await db.execute(delete(VehicleCheckin).where(VehicleCheckin.vehicle_id == vehicle_id))
     await db.delete(vehicle)
     await db.commit()
 
@@ -143,7 +144,7 @@ async def delete_vehicle(vehicle_id: int, request: Request, db: DB, _: AdminUser
 # Users
 # --------------------------------------------------------------------------- #
 @users.get("")
-async def list_users(request: Request, db: DB, admin: AdminUser):
+async def list_users(request: Request, db: DB, admin: AdminUser) -> Response:
     result = await db.scalars(select(AppUser).order_by(AppUser.username))
     return render(
         request,
@@ -165,7 +166,7 @@ async def create_user(
     username: Annotated[str, Form()],
     password: Annotated[str, Form()],
     role: Annotated[str, Form()],
-):
+) -> Response:
     exists = await db.scalar(select(AppUser).where(AppUser.username == username))
     if exists is not None:
         flash(request, f"Benutzername '{username}' existiert bereits", error=True)
@@ -185,7 +186,7 @@ async def create_user(
 
 
 @users.post("/{user_id}/toggle")
-async def toggle_user(user_id: int, request: Request, db: DB, admin: AdminUser):
+async def toggle_user(user_id: int, request: Request, db: DB, admin: AdminUser) -> Response:
     user = await db.get(AppUser, user_id)
     if user is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Nutzer nicht gefunden: {user_id}")
@@ -201,7 +202,7 @@ async def toggle_user(user_id: int, request: Request, db: DB, admin: AdminUser):
 
 
 @users.post("/{user_id}/delete")
-async def delete_user(user_id: int, request: Request, db: DB, admin: AdminUser):
+async def delete_user(user_id: int, request: Request, db: DB, admin: AdminUser) -> Response:
     user = await db.get(AppUser, user_id)
     if user is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Nutzer nicht gefunden: {user_id}")
@@ -211,7 +212,7 @@ async def delete_user(user_id: int, request: Request, db: DB, admin: AdminUser):
         return _redirect("/admin/users")
 
     username = user.username
-    await db.execute(VehicleCheckin.__table__.delete().where(VehicleCheckin.username == username))
+    await db.execute(delete(VehicleCheckin).where(VehicleCheckin.username == username))
     await db.delete(user)
     await db.commit()
     flash(request, f"Nutzer '{username}' gelöscht")

@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import Response
 
 from app.db import get_db
 from app.models import Incident, Station, Vehicle
@@ -35,7 +36,7 @@ async def _detach_vehicles(db: AsyncSession, location_id: int) -> None:
 # Stations
 # --------------------------------------------------------------------------- #
 @stations.get("")
-async def list_stations(request: Request, db: DB, _: AdminUser):
+async def list_stations(request: Request, db: DB, _: AdminUser) -> Response:
     result = await db.scalars(select(Station).order_by(Station.name))
     return render(
         request,
@@ -45,12 +46,12 @@ async def list_stations(request: Request, db: DB, _: AdminUser):
 
 
 @stations.get("/new")
-async def new_station(request: Request, _: AdminUser):
+async def new_station(request: Request, _: AdminUser) -> Response:
     return render(request, "admin/station-form.html", {"station": None, "current_page": "stations"})
 
 
 @stations.get("/{station_id}/edit")
-async def edit_station(station_id: int, request: Request, db: DB, _: AdminUser):
+async def edit_station(station_id: int, request: Request, db: DB, _: AdminUser) -> Response:
     station = await db.get(Station, station_id)
     if station is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Ort nicht gefunden: {station_id}")
@@ -66,7 +67,7 @@ async def create_station(
     lat: Annotated[float, Form()],
     lng: Annotated[float, Form()],
     description: Annotated[str | None, Form()] = None,
-):
+) -> Response:
     db.add(Station(name=name, lat=lat, lng=lng, description=description or None))
     await db.commit()
     flash(request, f"Feuerwache '{name}' angelegt")
@@ -83,7 +84,7 @@ async def update_station(
     lat: Annotated[float, Form()],
     lng: Annotated[float, Form()],
     description: Annotated[str | None, Form()] = None,
-):
+) -> Response:
     station = await db.get(Station, station_id)
     if station is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Ort nicht gefunden: {station_id}")
@@ -99,7 +100,7 @@ async def update_station(
 
 
 @stations.post("/{station_id}/delete")
-async def delete_station(station_id: int, request: Request, db: DB, _: AdminUser):
+async def delete_station(station_id: int, request: Request, db: DB, _: AdminUser) -> Response:
     station = await db.get(Station, station_id)
     if station is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Ort nicht gefunden: {station_id}")
@@ -117,7 +118,7 @@ async def delete_station(station_id: int, request: Request, db: DB, _: AdminUser
 # Incidents
 # --------------------------------------------------------------------------- #
 @incidents.get("")
-async def list_incidents(request: Request, db: DB, _: AdminUser, all: bool = False):
+async def list_incidents(request: Request, db: DB, _: AdminUser, all: bool = False) -> Response:
     stmt = select(Incident).order_by(Incident.name)
     if not all:
         stmt = stmt.where(Incident.active.is_(True))
@@ -130,12 +131,12 @@ async def list_incidents(request: Request, db: DB, _: AdminUser, all: bool = Fal
 
 
 @incidents.get("/new")
-async def new_incident(request: Request, _: AdminUser):
+async def new_incident(request: Request, _: AdminUser) -> Response:
     return render(request, "admin/incident-form.html", {"incident": None, "current_page": "incidents"})
 
 
 @incidents.get("/{incident_id}/edit")
-async def edit_incident(incident_id: int, request: Request, db: DB, _: AdminUser):
+async def edit_incident(incident_id: int, request: Request, db: DB, _: AdminUser) -> Response:
     incident = await db.get(Incident, incident_id)
     if incident is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Einsatzort nicht gefunden: {incident_id}")
@@ -151,7 +152,7 @@ async def create_incident(
     lat: Annotated[float, Form()],
     lng: Annotated[float, Form()],
     description: Annotated[str | None, Form()] = None,
-):
+) -> Response:
     db.add(Incident(name=name, lat=lat, lng=lng, description=description or None, active=True))
     await db.commit()
     flash(request, f"Einsatzort '{name}' angelegt")
@@ -169,7 +170,7 @@ async def update_incident(
     lng: Annotated[float, Form()],
     description: Annotated[str | None, Form()] = None,
     active: Annotated[bool | None, Form()] = None,
-):
+) -> Response:
     incident = await db.get(Incident, incident_id)
     if incident is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Einsatzort nicht gefunden: {incident_id}")
@@ -187,7 +188,7 @@ async def update_incident(
 
 
 @incidents.post("/{incident_id}/toggle")
-async def toggle_incident(incident_id: int, request: Request, db: DB, _: AdminUser):
+async def toggle_incident(incident_id: int, request: Request, db: DB, _: AdminUser) -> Response:
     incident = await db.get(Incident, incident_id)
     if incident is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Einsatzort nicht gefunden: {incident_id}")
@@ -200,7 +201,7 @@ async def toggle_incident(incident_id: int, request: Request, db: DB, _: AdminUs
 
 
 @incidents.post("/{incident_id}/delete")
-async def delete_incident(incident_id: int, request: Request, db: DB, _: AdminUser):
+async def delete_incident(incident_id: int, request: Request, db: DB, _: AdminUser) -> Response:
     incident = await db.get(Incident, incident_id)
     if incident is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Einsatzort nicht gefunden: {incident_id}")

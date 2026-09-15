@@ -1,31 +1,34 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ff-trainingskarte
-  namespace: feuerwehr
+  name: ffw-funk
+  namespace: ffw-funk
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: ff-trainingskarte
+      app: ffw-funk
   template:
     metadata:
       labels:
-        app: ff-trainingskarte
+        app: ffw-funk
     spec:
-      # Alembic runs before the app starts, exactly where Flyway used to run
-      # inside the Spring boot sequence. Against the database Flyway already
-      # migrated, run `alembic stamp 0001_initial` once by hand first -
-      # otherwise this container tries to CREATE TABLE on existing tables.
+      # Alembic runs before the app starts, where Flyway used to sit inside the
+      # Spring boot sequence.
+      #
+      # This assumes ffw-funk has its OWN database (see secrets.yaml).
+      # If you point it at the database the Java app already uses, DELETE this
+      # init container and run `alembic stamp 0001_initial` once by hand -
+      # otherwise it issues CREATE TABLE against tables Flyway already created.
       initContainers:
         - name: migrate
-          image: ghcr.io/slin86/ff-trainingskarte-py:latest
+          image: ghcr.io/slin86/ffw-funk:latest
           command: ["alembic", "upgrade", "head"]
           envFrom:
             - configMapRef:
-                name: ff-trainingskarte-config
+                name: ffw-funk-config
             - secretRef:
-                name: feuerwehr-db
+                name: ffw-funk-secrets
           resources:
             requests:
               cpu: 50m
@@ -34,18 +37,18 @@ spec:
               memory: 256Mi
       containers:
         - name: app
-          image: ghcr.io/slin86/ff-trainingskarte-py:latest
+          image: ghcr.io/slin86/ffw-funk:latest
           ports:
             - containerPort: 8080
           envFrom:
             - configMapRef:
-                name: ff-trainingskarte-config
+                name: ffw-funk-config
             - secretRef:
-                name: feuerwehr-db
+                name: ffw-funk-secrets
           readinessProbe:
             httpGet:
-              # Public, no auth - the same reason /api/version was public in the
-              # Spring version. Replaces the actuator health endpoint.
+              # Public by design - the map header reads it before anything else
+              # loads. Replaces the actuator health endpoint.
               path: /api/version
               port: 8080
             initialDelaySeconds: 5
@@ -57,6 +60,8 @@ spec:
             initialDelaySeconds: 20
             periodSeconds: 30
           resources:
+            # Measured: 72 MB after startup, ~110 MB under load. 128Mi request
+            # with a 256Mi limit leaves room without over-reserving.
             requests:
               cpu: 50m
               memory: 128Mi

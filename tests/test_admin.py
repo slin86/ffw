@@ -164,7 +164,8 @@ async def test_edit_form_of_unknown_location_is_404(admin):
 def _token(client) -> str:
     from app.security import CSRF_HEADER
 
-    return client.headers[CSRF_HEADER]
+    token: str = client.headers[CSRF_HEADER]
+    return token
 
 
 async def _user_id(session_factory, username: str) -> int | None:

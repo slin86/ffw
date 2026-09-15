@@ -26,7 +26,7 @@ from app.routers import misc, vehicles, web
 from app.routers.admin import locations as admin_locations
 from app.routers.admin import vehicles_users as admin_vehicles_users
 from app.security import CsrfMiddleware, Forbidden, NotAuthenticated
-from app.sessions import RedisSessionStore, SessionMiddleware
+from app.sessions import RedisSessionStore, SessionMiddleware, SessionStore
 
 log = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await dispose_engine()
 
 
-def create_app(session_store=None) -> FastAPI:
+def create_app(session_store: SessionStore | None = None) -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(

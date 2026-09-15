@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import Response
 
 from app.db import get_db
 from app.models import AppUser
@@ -21,7 +22,7 @@ DB = Annotated[AsyncSession, Depends(get_db)]
 
 
 @router.get("/login")
-async def login_page(request: Request, error: bool = False):
+async def login_page(request: Request, error: bool = False) -> Response:
     if get_session(request).get("username"):
         return RedirectResponse("/", status_code=303)
     return render(request, "login.html", {"error": error})
@@ -33,7 +34,7 @@ async def do_login(
     db: DB,
     username: Annotated[str, Form()],
     password: Annotated[str, Form()],
-):
+) -> Response:
     user = await db.scalar(select(AppUser).where(AppUser.username == username))
 
     if user is None or not user.enabled or not verify_password(password, user.password_hash):
@@ -48,11 +49,11 @@ async def do_login(
 
 
 @router.post("/logout")
-async def do_logout(request: Request):
+async def do_logout(request: Request) -> Response:
     get_session(request).clear()
     return RedirectResponse("/login?logout", status_code=303)
 
 
 @router.get("/")
-async def map_page(request: Request, user: AuthUser):
+async def map_page(request: Request, user: AuthUser) -> Response:
     return render(request, "map.html", {"username": user.username, "is_admin": user.is_admin})

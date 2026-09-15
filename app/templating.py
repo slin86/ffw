@@ -11,6 +11,7 @@ from datetime import datetime
 from typing import Any
 
 from fastapi import Request
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from markupsafe import Markup
 
@@ -40,7 +41,7 @@ def render(
     template: str,
     context: dict[str, Any] | None = None,
     status_code: int = 200,
-):
+) -> HTMLResponse:
     """Render a template with the per-request extras every page needs.
 
     Flash messages are popped here, which is the same read-once behaviour the

@@ -88,9 +88,12 @@ def parse_nominatim(payload: object) -> GeocodeResponse | None:
     first = payload[0]
     if not isinstance(first, dict):
         return None
+    raw_lng = first.get("lon", first.get("lng"))
+    if raw_lng is None:
+        return None
     try:
         lat = float(first["lat"])
-        lng = float(first.get("lon", first.get("lng")))
+        lng = float(raw_lng)
         display_name = str(first["display_name"])
     except (KeyError, TypeError, ValueError):
         return None

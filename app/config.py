@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     redis_host: str = Field(default="localhost", alias="REDIS_HOST")
     redis_port: int = Field(default=6379, alias="REDIS_PORT")
     redis_password: str = Field(default="", alias="REDIS_HOST_PASSWORD")
+    # Own database index so a FLUSHDB on another app's sessions cannot reach ours.
+    redis_db: int = Field(default=0, alias="REDIS_DB")
 
     session_ttl_seconds: int = Field(default=60 * 60 * 8, alias="SESSION_TTL_SECONDS")
     session_cookie_secure: bool = Field(default=False, alias="SESSION_COOKIE_SECURE")
@@ -68,7 +70,7 @@ class Settings(BaseSettings):
     @property
     def redis_url(self) -> str:
         auth = f":{self.redis_password}@" if self.redis_password else ""
-        return f"redis://{auth}{self.redis_host}:{self.redis_port}/0"
+        return f"redis://{auth}{self.redis_host}:{self.redis_port}/{self.redis_db}"
 
 
 @lru_cache
