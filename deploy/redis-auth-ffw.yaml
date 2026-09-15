@@ -1,0 +1,21 @@
+apiVersion: secrets.infisical.com/v1alpha1
+kind: InfisicalSecret
+metadata:
+  name: redis-auth-nextcloud
+  namespace: feuerwehr
+spec:
+  hostAPI: http://infisical-infisical-standalone-infisical.infisical.svc.cluster.local:8080/api
+  resyncInterval: 60
+  authentication:
+    universalAuth:
+      secretsScope:
+        projectSlug: homelab-ei-fj
+        envSlug: prod
+        secretsPath: /redis
+      credentialsRef:
+        secretName: infisical-machine-identity
+        secretNamespace: infisical-operator
+  managedKubeSecretReferences:
+    - secretName: redis-auth
+      secretNamespace: feuerwehr
+      creationPolicy: Owner
