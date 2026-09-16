@@ -7,13 +7,13 @@ metadata:
     kubernetes.io/ingress.class: traefik
 spec:
   rules:
-    - host: feuerwehr.home.lan
+    - host: ffw-funk.home.lan
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: ff-trainingskarte
+                name: ffw-funk
                 port:
-                  number: 8080
+                  number: 80
