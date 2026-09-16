@@ -8,8 +8,7 @@ resources:
   - deployment.yaml
   - service.yaml
   - ingress.yaml
-  # secrets.yaml is a template and is deliberately NOT listed here.
-  # The real Secret comes from Infisical.
+  - secrets.yaml
 
 commonLabels:
   app.kubernetes.io/name: ffw-funk
