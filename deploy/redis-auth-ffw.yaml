@@ -2,7 +2,7 @@ apiVersion: secrets.infisical.com/v1alpha1
 kind: InfisicalSecret
 metadata:
   name: redis-auth-nextcloud
-  namespace: feuerwehr
+  namespace: ffw-funk
 spec:
   hostAPI: http://infisical-infisical-standalone-infisical.infisical.svc.cluster.local:8080/api
   resyncInterval: 60
@@ -17,5 +17,5 @@ spec:
         secretNamespace: infisical-operator
   managedKubeSecretReferences:
     - secretName: redis-auth
-      secretNamespace: feuerwehr
+      secretNamespace: ffw-funk
       creationPolicy: Owner

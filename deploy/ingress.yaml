@@ -3,9 +3,8 @@ kind: Ingress
 metadata:
   name: ffw-funk
   namespace: ffw-funk
-  annotations:
-    kubernetes.io/ingress.class: traefik
 spec:
+  ingressClassName: traefik
   rules:
     - host: ffw-funk.home.lan
       http:
