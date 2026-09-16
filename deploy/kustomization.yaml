@@ -8,6 +8,7 @@ resources:
   - deployment.yaml
   - service.yaml
   - ingress.yaml
+  - ingressroute.yaml
   - secrets.yaml
 
 commonLabels:

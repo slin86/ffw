@@ -1,0 +1,15 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ffw-funk
+  namespace: ffw-funk
+spec:
+  entryPoints:
+    - public
+  routes:
+    - match: Host(`ffw-funk.slin.io`)
+      kind: Rule
+      services:
+        - name: ffw-funk
+          port: 80
+  tls: {}
