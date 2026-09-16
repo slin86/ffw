@@ -22,7 +22,7 @@ spec:
       # otherwise it issues CREATE TABLE against tables Flyway already created.
       initContainers:
         - name: migrate
-          image: ghcr.io/slin86/ffw-funk:0.6.3
+          image: ghcr.io/slin86/ffw-funk:0.6.4
           command: ["alembic", "upgrade", "head"]
           envFrom:
             - configMapRef:
@@ -37,7 +37,7 @@ spec:
               memory: 256Mi
       containers:
         - name: app
-          image: ghcr.io/slin86/ffw-funk:0.6.3
+          image: ghcr.io/slin86/ffw-funk:0.6.4
           ports:
             - containerPort: 8080
           env:
