@@ -10,6 +10,7 @@ resources:
   - ingress.yaml
   - ingressroute.yaml
   - secrets.yaml
+  - redis-auth-ffw.yaml
 
 commonLabels:
   app.kubernetes.io/name: ffw-funk
