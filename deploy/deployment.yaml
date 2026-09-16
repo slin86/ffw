@@ -4,7 +4,7 @@ metadata:
   name: ffw-funk
   namespace: ffw-funk
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: ffw-funk
