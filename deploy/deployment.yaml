@@ -40,6 +40,12 @@ spec:
           image: ghcr.io/slin86/ffw-funk:0.6.2
           ports:
             - containerPort: 8080
+          env:
+            - name: REDIS_HOST_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-auth
+                  key: password
           envFrom:
             - configMapRef:
                 name: ffw-funk-config
