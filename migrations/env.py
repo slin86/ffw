@@ -7,13 +7,19 @@ from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.config import get_settings
 from app.models import Base
 
 config = context.config
-config.set_main_option("sqlalchemy.url", get_settings().sqlalchemy_url)
+
+# The URL is passed straight to the engine and never written into the Alembic
+# config. alembic.ini is read by configparser, which treats "%" as
+# interpolation syntax - and a percent-encoded password (any of @ : / ? # or a
+# non-ASCII character) contains "%", so set_main_option() would raise
+# "invalid interpolation syntax" before a single migration runs.
+DB_URL = get_settings().sqlalchemy_url
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -23,7 +29,7 @@ target_metadata = Base.metadata
 
 def run_migrations_offline() -> None:
     context.configure(
-        url=config.get_main_option("sqlalchemy.url"),
+        url=DB_URL,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -39,9 +45,7 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_async_migrations() -> None:
-    connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section, {}), prefix="sqlalchemy."
-    )
+    connectable = create_async_engine(DB_URL)
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
     await connectable.dispose()
