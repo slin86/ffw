@@ -123,6 +123,7 @@ class SessionMiddleware(BaseHTTPMiddleware):
         secure: bool = False,
         cookie_name: str = SESSION_COOKIE,
     ) -> None:
+        """`secure=True` means "Secure cookie on https requests", not "always"."""
         super().__init__(app)
         self.store = store
         self.ttl = ttl
@@ -147,7 +148,7 @@ class SessionMiddleware(BaseHTTPMiddleware):
                 await self.store.delete(sid)
             session.sid = secrets.token_urlsafe(32)
             await self.store.write(session.sid, session.as_dict(), self.ttl)
-            self._set_cookie(response, session.sid)
+            self._set_cookie(request, response, session.sid)
         elif session.sid is not None and not session.as_dict():
             await self.store.delete(session.sid)
             response.delete_cookie(self.cookie_name, path="/")
@@ -156,7 +157,13 @@ class SessionMiddleware(BaseHTTPMiddleware):
 
         return response
 
-    def _set_cookie(self, response: Response, sid: str) -> None:
+    def _set_cookie(self, request: Request, response: Response, sid: str) -> None:
+        # The app is reachable over both https (public host) and plain http
+        # (LAN host). A Secure cookie is silently dropped by the browser over
+        # http, which costs the session and then fails CSRF on the next POST -
+        # so derive the flag per request instead of pinning it in config.
+        # `secure=False` still disables it everywhere, for local development.
+        secure = self.secure and request.url.scheme == "https"
         response.set_cookie(
             self.cookie_name,
             sid,
@@ -164,7 +171,7 @@ class SessionMiddleware(BaseHTTPMiddleware):
             path="/",
             httponly=True,
             samesite="lax",
-            secure=self.secure,
+            secure=secure,
         )
 
 

@@ -104,3 +104,58 @@ async def test_viewer_is_denied_the_admin_area(viewer):
     for path in ("/admin/vehicles", "/admin/users", "/admin/stations", "/admin/incidents"):
         response = await viewer.get(path)
         assert response.status_code == 403, path
+
+
+@pytest.mark.parametrize(
+    "password",
+    [
+        "simple",
+        "pass@word",  # @ would split host from userinfo
+        "has%20percent",  # would be decoded to "has percent"
+        "slash/and:colon#hash",
+        "quote\"and'apostrophe",
+    ],
+)
+def test_db_url_survives_special_characters_in_the_password(password):
+    """A mangled password shows up only as "password authentication failed"."""
+    from sqlalchemy.engine import make_url
+
+    from app.config import Settings
+
+    settings = Settings(
+        DB_URL="postgresql+asyncpg://db.example:5432/ffw_funk",
+        DB_USER="ffw_funk",
+        DB_PASSWORD=password,
+    )
+    parsed = make_url(settings.sqlalchemy_url)
+    assert parsed.password == password
+    assert parsed.username == "ffw_funk"
+    assert parsed.host == "db.example"
+    assert parsed.database == "ffw_funk"
+
+
+async def test_secure_cookie_is_dropped_on_plain_http(app_instance):
+    """The app is served over https (public) and http (LAN) at the same time.
+
+    A Secure cookie is discarded by the browser over http, which loses the
+    session and makes the next POST fail CSRF. So the flag follows the request
+    scheme rather than a fixed config value.
+    """
+    from httpx import ASGITransport, AsyncClient
+
+    from app.main import create_app
+    from app.sessions import MemorySessionStore, SessionMiddleware
+
+    application = create_app(session_store=MemorySessionStore())
+    application.dependency_overrides = app_instance.dependency_overrides
+    for middleware in application.user_middleware:
+        if middleware.cls is SessionMiddleware:  # type: ignore[comparison-overlap]
+            middleware.kwargs["secure"] = True
+
+    transport = ASGITransport(app=application)
+
+    async with AsyncClient(transport=transport, base_url="http://lan.example") as http:
+        assert "secure" not in (await http.get("/login")).headers["set-cookie"].lower()
+
+    async with AsyncClient(transport=transport, base_url="https://public.example") as https:
+        assert "secure" in (await https.get("/login")).headers["set-cookie"].lower()
