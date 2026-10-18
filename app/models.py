@@ -40,6 +40,16 @@ def utcnow() -> datetime:
     return datetime.now(UTC)
 
 
+def as_utc(value: datetime) -> datetime:
+    """Read a stored timestamp back as timezone-aware.
+
+    Postgres hands back an aware datetime for TIMESTAMPTZ, SQLite (the test
+    database) a naive one. Comparing the two raises TypeError, so every read of
+    a stored timestamp goes through here rather than relying on the backend.
+    """
+    return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
+
+
 def in_hamburg(lat: float, lng: float) -> bool:
     return MIN_LAT <= lat <= MAX_LAT and MIN_LNG <= lng <= MAX_LNG
 
@@ -56,6 +66,11 @@ class AppUser(Base):
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
     role: Mapped[str] = mapped_column(String, nullable=False)
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    # Nullable: accounts created before mail existed, and ones an admin creates
+    # by hand, have none. Without an address a password reset is impossible -
+    # the admin has to set a new one with `python -m app.cli set-password`.
+    email: Mapped[str | None] = mapped_column(String, nullable=True, unique=True)
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     @property
     def is_admin(self) -> bool:
@@ -125,3 +140,43 @@ class VehicleCheckin(Base):
     checked_in_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
 
     vehicle: Mapped[Vehicle] = relationship(lazy="selectin")
+
+
+# Token purposes. VERIFY confirms an address at registration, RESET authorises
+# one password change.
+TOKEN_VERIFY = "VERIFY"
+TOKEN_RESET = "RESET"
+
+# A verification link may sit in an inbox overnight; a reset link is a standing
+# key to an account and gets a much shorter life.
+VERIFY_TTL_HOURS = 48
+RESET_TTL_HOURS = 1
+
+
+class UserToken(Base):
+    """One-time token for email verification and password reset.
+
+    Only the SHA-256 hash of the token is stored. The raw value exists once, in
+    the mail that was sent - so a dump of this table does not let anyone take
+    over an account, the same reason password_hash exists instead of a password.
+
+    Single use is enforced through `used_at` rather than by deleting the row:
+    a consumed token stays visible, which makes "the link says it is invalid"
+    answerable without guessing.
+    """
+
+    __tablename__ = "user_token"
+
+    id: Mapped[int] = mapped_column(PK, primary_key=True)
+    user_id: Mapped[int] = mapped_column(FK, ForeignKey("app_user.id"), nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    purpose: Mapped[str] = mapped_column(String(16), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+
+    user: Mapped[AppUser] = relationship(lazy="selectin")
+
+    def is_usable(self, now: datetime | None = None) -> bool:
+        now = now or utcnow()
+        return self.used_at is None and as_utc(self.expires_at) > now

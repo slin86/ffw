@@ -31,6 +31,7 @@
     <thead>
         <tr>
             <th>Benutzername</th>
+            <th>E-Mail</th>
             <th>Rolle</th>
             <th>Status</th>
             <th>Aktionen</th>
@@ -40,6 +41,14 @@
         {% for u in users %}
         <tr>
             <td><strong>{{ u.username }}</strong></td>
+            {# Self-registered accounts arrive disabled; the address being
+               confirmed is what tells an admin the request is genuine. #}
+            <td>
+                {{ u.email or '-' }}
+                {% if u.email and not u.email_verified_at %}
+                <span style="color:#e67e22;font-size:0.75rem;">(unbestätigt)</span>
+                {% endif %}
+            </td>
             <td>{{ u.role }}</td>
             <td>{{ 'Aktiv' if u.enabled else 'Deaktiviert' }}</td>
             <td class="actions">

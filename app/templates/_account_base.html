@@ -1,0 +1,34 @@
+{# Shared shell for the five public account pages (login, register, verify
+   result, forgot and reset password). The styles used to be inline in
+   login.html; a second page made that a copy, so it moved here. #}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}FF-Trainingskarte{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: Arial, sans-serif; background: #f5f5f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .login-form { background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        h1 { text-align: center; color: #333; margin-bottom: 1.5rem; }
+        label { display: block; margin-bottom: 0.25rem; font-weight: bold; color: #555; }
+        input[type="text"], input[type="password"], input[type="email"] { width: 100%; padding: 0.5rem; margin-bottom: 1rem; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 0.75rem; background: #d32f2f; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+        button:hover { background: #b71c1c; }
+        .error { background: #ffebee; color: #c62828; padding: 0.5rem; border-radius: 4px; margin-bottom: 1rem; text-align: center; }
+        .message { background: #e8f5e9; color: #2e7d32; padding: 0.5rem; border-radius: 4px; margin-bottom: 1rem; text-align: center; }
+        .hint { color: #666; font-size: 0.85rem; margin: -0.5rem 0 1rem; }
+        .links { margin-top: 1rem; text-align: center; font-size: 0.9rem; }
+        .links a { color: #1976d2; text-decoration: none; }
+        .links a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="login-form">
+        <h1>{% block heading %}{% endblock %}</h1>
+        {% if error %}<div class="error">{{ error }}</div>{% endif %}
+        {% if message %}<div class="message">{{ message }}</div>{% endif %}
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

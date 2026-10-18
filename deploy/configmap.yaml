@@ -18,5 +18,17 @@ data:
   # Traefik terminates TLS for ffw-funk.slin.io, so the session cookie is Secure.
   SESSION_COOKIE_SECURE: "true"
 
+  # Mail goes through the central Postfix relay, which is the only component
+  # that knows about SES. No credentials: it is reachable from inside the
+  # cluster only.
+  MAIL_ENABLED: "true"
+  SMTP_HOST: "mail-relay.mail.svc.cluster.local"
+  SMTP_PORT: "587"
+  SMTP_FROM: "noreply@slin.io"
+
+  # Absolute base for the links in verification and reset mails. Must be the
+  # public host: a link to ffw-funk.home.lan is useless on a phone.
+  PUBLIC_BASE_URL: "https://ffw-funk.slin.io"
+
   # Nominatim's usage policy expects an identifiable client.
   NOMINATIM_USER_AGENT: "ffw-funk/1.0 (privates Hobby-Projekt; https://ffw-funk.slin.io)"

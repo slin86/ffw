@@ -25,11 +25,11 @@ import sys
 from sqlalchemy import select
 
 from app.db import dispose_engine, get_sessionmaker
-from app.models import ROLES, AppUser
+from app.models import ROLES, AppUser, utcnow
 from app.security import hash_password
 
 
-async def create_user(username: str, password: str, role: str) -> int:
+async def create_user(username: str, password: str, role: str, email: str | None = None) -> int:
     if role not in ROLES:
         print(f"Unbekannte Rolle: {role}. Erlaubt: {', '.join(ROLES)}", file=sys.stderr)
         return 2
@@ -40,12 +40,21 @@ async def create_user(username: str, password: str, role: str) -> int:
             print(f"Nutzer '{username}' existiert bereits.", file=sys.stderr)
             return 1
 
+        if email is not None:
+            email = email.strip().lower()
+            if await db.scalar(select(AppUser).where(AppUser.email == email)) is not None:
+                print(f"E-Mail-Adresse '{email}' ist bereits vergeben.", file=sys.stderr)
+                return 1
+
         db.add(
             AppUser(
                 username=username,
                 password_hash=hash_password(password),
                 role=role,
                 enabled=True,
+                email=email,
+                # Set by an admin, so the address counts as confirmed.
+                email_verified_at=utcnow() if email else None,
             )
         )
         await db.commit()
@@ -76,7 +85,7 @@ async def list_users() -> int:
         return 0
     for user in users:
         state = "aktiv" if user.enabled else "deaktiviert"
-        print(f"{user.username:24} {user.role:8} {state}")
+        print(f"{user.username:24} {user.role:8} {state:12} {user.email or '-'}")
     return 0
 
 
@@ -99,6 +108,10 @@ def build_parser() -> argparse.ArgumentParser:
     create = sub.add_parser("create-user", help="Neuen Nutzer anlegen")
     create.add_argument("--username", required=True)
     create.add_argument("--role", default="ADMIN", choices=list(ROLES))
+    create.add_argument(
+        "--email",
+        help="Optional. Ohne Adresse ist kein Passwort-Reset per Mail möglich.",
+    )
 
     passwd = sub.add_parser("set-password", help="Passwort eines Nutzers ändern")
     passwd.add_argument("--username", required=True)
@@ -116,7 +129,7 @@ def main(argv: list[str] | None = None) -> int:
             if not password:
                 print("Leeres Passwort ist nicht zulässig.", file=sys.stderr)
                 return 2
-            return asyncio.run(_run(create_user(args.username, password, args.role)))
+            return asyncio.run(_run(create_user(args.username, password, args.role, args.email)))
 
         if args.command == "set-password":
             password = read_password()
