@@ -96,3 +96,35 @@ def test_password_is_read_from_stdin_when_piped(monkeypatch):
 def test_parser_rejects_an_unknown_role():
     with pytest.raises(SystemExit):
         cli.build_parser().parse_args(["create-user", "--username", "x", "--role", "ROOT"])
+
+
+async def test_create_user_stores_the_email_as_verified(session_factory, seeded):
+    """An admin-created address needs no confirmation round trip."""
+    from sqlalchemy import select
+
+    from app.models import AppUser
+
+    assert await cli.create_user("nils", "geheim123", "ADMIN", "Nils@Example.COM ") == 0
+
+    async with session_factory() as db:
+        user = await db.scalar(select(AppUser).where(AppUser.username == "nils"))
+
+    assert user.email == "nils@example.com", "Adresse wird normalisiert gespeichert"
+    assert user.email_verified_at is not None
+
+
+async def test_create_user_without_an_email_is_allowed(session_factory, seeded):
+    from sqlalchemy import select
+
+    from app.models import AppUser
+
+    assert await cli.create_user("ohne-mail", "geheim123", "VIEWER") == 0
+
+    async with session_factory() as db:
+        user = await db.scalar(select(AppUser).where(AppUser.username == "ohne-mail"))
+    assert user.email is None
+
+
+async def test_create_user_refuses_a_duplicate_email(session_factory, seeded):
+    assert await cli.create_user("erster", "geheim123", "VIEWER", "doppelt@example.com") == 0
+    assert await cli.create_user("zweiter", "geheim123", "VIEWER", "doppelt@example.com") == 1

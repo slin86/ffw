@@ -25,7 +25,10 @@ DB = Annotated[AsyncSession, Depends(get_db)]
 async def login_page(request: Request, error: bool = False) -> Response:
     if get_session(request).get("username"):
         return RedirectResponse("/", status_code=303)
-    return render(request, "login.html", {"error": error})
+    # Deliberately vague: the same text for an unknown user, a wrong password
+    # and a disabled account, so the form cannot be used to probe for members.
+    message = "Anmeldung fehlgeschlagen" if error else None
+    return render(request, "login.html", {"error": message})
 
 
 @router.post("/login")

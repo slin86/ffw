@@ -28,6 +28,9 @@ from app.db import get_db
 from app.models import AppUser
 from app.sessions import Session, get_session
 
+# Long enough to matter, short enough that people do not write it on a note.
+MIN_PASSWORD_LENGTH = 10
+
 CSRF_HEADER = "X-CSRF-TOKEN"
 CSRF_FORM_FIELD = "_csrf"
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS", "TRACE"})

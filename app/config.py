@@ -42,6 +42,23 @@ class Settings(BaseSettings):
     session_ttl_seconds: int = Field(default=60 * 60 * 8, alias="SESSION_TTL_SECONDS")
     session_cookie_secure: bool = Field(default=False, alias="SESSION_COOKIE_SECURE")
 
+    # Mail goes through the central Postfix relay (which fronts Amazon SES).
+    # No credentials and no TLS: the relay is reachable only from inside the
+    # cluster's pod network, and it is the only component that knows about SES.
+    # An app must never configure a mail provider itself.
+    smtp_host: str = Field(default="mail-relay.mail.svc.cluster.local", alias="SMTP_HOST")
+    smtp_port: int = Field(default=587, alias="SMTP_PORT")
+    smtp_from: str = Field(default="noreply@slin.io", alias="SMTP_FROM")
+    smtp_timeout: float = Field(default=10.0, alias="SMTP_TIMEOUT")
+    # Absolute base for the links in verification and reset mails. The app is
+    # reachable under two hostnames (public https, LAN http), and a mail must
+    # not inherit whichever one the request happened to arrive on - a reset
+    # link pointing at home.lan is useless to someone reading mail on a phone.
+    public_base_url: str = Field(default="http://localhost:8080", alias="PUBLIC_BASE_URL")
+    # Empty disables sending entirely - the default, so a dev machine outside
+    # the cluster never tries to reach a host it cannot resolve.
+    mail_enabled: bool = Field(default=False, alias="MAIL_ENABLED")
+
     nominatim_url: str = Field(default="https://nominatim.openstreetmap.org/search", alias="NOMINATIM_URL")
     nominatim_user_agent: str = Field(
         default="ffw-trainingskarte/1.0 (privates Hobby-Projekt)", alias="NOMINATIM_USER_AGENT"
@@ -55,6 +72,19 @@ class Settings(BaseSettings):
             return "postgresql+asyncpg://" + value[len("jdbc:postgresql://") :]
         if value.startswith("postgresql://"):
             return "postgresql+asyncpg://" + value[len("postgresql://") :]
+        return value
+
+    @field_validator("public_base_url")
+    @classmethod
+    def strip_trailing_slash(cls, value: str) -> str:
+        return value.rstrip("/")
+
+    @field_validator("smtp_from")
+    @classmethod
+    def sender_must_be_slin_io(cls, value: str) -> str:
+        """The relay only accepts @slin.io senders; fail at startup, not at send time."""
+        if not value.endswith("@slin.io"):
+            raise ValueError(f"SMTP_FROM must be an @slin.io address, got {value!r}")
         return value
 
     @property

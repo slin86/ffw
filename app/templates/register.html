@@ -1,0 +1,29 @@
+{% extends "_account_base.html" %}
+{% block title %}Zugang beantragen{% endblock %}
+{% block heading %}Zugang beantragen{% endblock %}
+
+{% block content %}
+{% if not message %}
+<form action="/register" method="post">
+    {{ csrf_field }}
+    <label for="username">Benutzername</label>
+    <input type="text" id="username" name="username" value="{{ username or '' }}" required autofocus>
+
+    <label for="email">E-Mail-Adresse</label>
+    <input type="email" id="email" name="email" value="{{ email or '' }}" required>
+    <p class="hint">An diese Adresse geht die Bestätigung. Sie wird auch für das
+       Zurücksetzen des Passworts gebraucht.</p>
+
+    <label for="password">Passwort</label>
+    <input type="password" id="password" name="password" required minlength="10">
+
+    <label for="password_repeat">Passwort wiederholen</label>
+    <input type="password" id="password_repeat" name="password_repeat" required minlength="10">
+
+    <button type="submit">Zugang beantragen</button>
+</form>
+<p class="hint">Nach der Bestätigung deiner Adresse schaltet ein Administrator
+   den Zugang frei. Das passiert nicht automatisch.</p>
+{% endif %}
+<div class="links"><a href="/login">Zurück zur Anmeldung</a></div>
+{% endblock %}

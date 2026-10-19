@@ -21,8 +21,8 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import BASE_DIR, get_settings
 from app.db import dispose_engine
+from app.routers import account, misc, vehicles, web
 from app.routers import locations as api_locations
-from app.routers import misc, vehicles, web
 from app.routers.admin import locations as admin_locations
 from app.routers.admin import vehicles_users as admin_vehicles_users
 from app.security import CsrfMiddleware, Forbidden, NotAuthenticated
@@ -76,6 +76,7 @@ def create_app(session_store: SessionStore | None = None) -> FastAPI:
     app.mount("/js", StaticFiles(directory=str(BASE_DIR / "static" / "js")), name="js")
 
     app.include_router(web.router)
+    app.include_router(account.router)
     app.include_router(vehicles.router)
     app.include_router(api_locations.stations)
     app.include_router(api_locations.incidents)

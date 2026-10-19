@@ -68,6 +68,56 @@ Everything else carries over:
   public for the same reason it was in the Spring version.
 * The old `flyway_schema_history` table can stay; nothing reads it any more.
 
+## Accounts and mail
+
+Mail goes through the homelab's central Postfix relay (which fronts Amazon SES).
+The app never configures a mail provider: `SMTP_HOST`, `SMTP_PORT` and
+`SMTP_FROM` point at the relay, there are no credentials, and the relay is
+reachable from inside the cluster only. `MAIL_ENABLED` is **off by default** so
+a dev machine never tries to resolve a cluster-internal host; with it off the
+app logs the full body, which is how you copy a verification or reset link out
+of the log while developing.
+
+`PUBLIC_BASE_URL` is the absolute base for links in mails. It must be the public
+host — the app answers on `ffw-funk.slin.io` and `ffw-funk.home.lan`, and a link
+to the LAN name is useless to someone reading mail on a phone.
+
+### Registration
+
+`/register` is open to anyone who can reach the site. Two gates follow:
+
+1. The address is confirmed through `/verify/{token}`.
+2. **An admin enables the account** in the user administration. Verification on
+   its own grants nothing — the mail proves the address belongs to them, a human
+   decides who gets in. The admin user list marks unconfirmed addresses.
+
+### Password reset
+
+`/forgot-password` issues a one-hour, single-use link. `/forgot-password` and a
+registration against a known address both answer with the same page whether or
+not the account exists: the member list of a fire department is not something a
+public form should confirm. A taken *username* is the one exception — the person
+has to pick another one.
+
+Tokens are stored as SHA-256 hashes, so a dump of `user_token` does not let
+anyone take over an account. Issuing a new token of the same purpose invalidates
+the previous one, and opening a reset link does not burn it — only submitting a
+new password does, so a mail client prefetching the URL cannot break it.
+
+### First user
+
+The dev seeder only runs with `APP_PROFILE=dev`, so a production database starts
+empty. Create the first admin through the CLI — the password is read from stdin,
+never passed as an argument, so it stays out of shell history and container logs:
+
+```bash
+kubectl exec -n ffw-funk -it deploy/ffw-funk -- \
+    python -m app.cli create-user --username nils --role ADMIN --email nils@example.com
+```
+
+An address given here counts as confirmed. Without one, that account cannot use
+the password reset — an admin has to run `set-password` instead.
+
 ## API
 
 | Method | Path | Access | Description |
